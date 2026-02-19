@@ -68,6 +68,9 @@ intentflow validate
 | `validate` | Check `.intentflow/` structure |
 | `hook install` | Install git pre-commit hook |
 | `hook uninstall` | Remove git pre-commit hook |
+| `skill install` | Install skill into AI agent config files |
+| `skill uninstall` | Remove skill from config files |
+| `scan` | Generate file-intent stubs for source files |
 
 ## More Info
 
