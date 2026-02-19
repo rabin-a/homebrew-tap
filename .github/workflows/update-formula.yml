@@ -1,0 +1,59 @@
+name: Update Formula
+
+on:
+  repository_dispatch:
+    types: [update-formula]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update formula
+        run: |
+          VERSION="${{ github.event.client_payload.version }}"
+          VERSION_NUM="${VERSION#v}"
+          ARM64_SHA="${{ github.event.client_payload.arm64_sha256 }}"
+          X86_64_SHA="${{ github.event.client_payload.x86_64_sha256 }}"
+
+          cat > Formula/intentflow.rb << RUBY
+          class Intentflow < Formula
+            desc "AI-agent and human shared memory layer for project intent"
+            homepage "https://github.com/rabin-a/intentflow"
+            version "${VERSION_NUM}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/rabin-a/intentflow/releases/download/${VERSION}/intentflow-${VERSION}-aarch64-apple-darwin.tar.gz"
+                sha256 "${ARM64_SHA}"
+              else
+                url "https://github.com/rabin-a/intentflow/releases/download/${VERSION}/intentflow-${VERSION}-x86_64-apple-darwin.tar.gz"
+                sha256 "${X86_64_SHA}"
+              end
+            end
+
+            def install
+              bin.install "intentflow"
+            end
+
+            test do
+              assert_match "intentflow", shell_output("#{bin}/intentflow --version")
+            end
+          end
+          RUBY
+
+          # Fix indentation (remove leading spaces from heredoc)
+          sed -i 's/^          //' Formula/intentflow.rb
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/intentflow.rb
+          git commit -m "Update intentflow to ${{ github.event.client_payload.version }}"
+          git push
